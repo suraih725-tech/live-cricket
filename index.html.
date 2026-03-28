@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CricHD Live Stream - GitHub Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; text-align: center; }
+        .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid #f40; }
+        .player-box { width: 95%; max-width: 850px; margin: 30px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        video { width: 100%; aspect-ratio: 16/9; display: block; }
+        .status-bar { padding: 10px; font-size: 14px; color: #aaa; }
+        .live-dot { height: 10px; width: 10px; background-color: #ff0000; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2><span class="live-dot"></span> CricHD Live Streaming</h2>
+    </div>
+
+    <div class="player-box">
+        <video id="video" controls autoplay playsinline poster="https://cdnjs.crichd.su/crichd.jpg"></video>
+        <div id="status" class="status-bar">Searching for live stream link...</div>
+    </div>
+
+    <script>
+        // Target CricHD link
+        const targetUrl = "https://playerado.top/embed2.php?id=willowextra&v=su";
+        
+        // CORS Proxy use kar rahe hain kyunki GitHub se direct request block ho sakti hai
+        const proxy = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
+
+        fetch(proxy)
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                const html = data.contents;
+                // Regex to find .m3u8 link
+                const m3u8Regex = /(https?:\/\/.*\.m3u8[^\s\'"]*)/;
+                const match = html.match(m3u8Regex);
+
+                if (match && match[0]) {
+                    const streamUrl = match[0];
+                    document.getElementById('status').innerHTML = "Stream Found! Loading Player...";
+                    initPlayer(streamUrl);
+                } else {
+                    document.getElementById('status').innerHTML = "Error: Stream link not found. Try refreshing.";
+                }
+            })
+            .catch(err => {
+                document.getElementById('status').innerHTML = "Connection Error. Please check your internet.";
+                console.error(err);
+            });
+
+        function initPlayer(source) {
+            var video = document.getElementById('video');
+            if (Hls.isSupported()) {
+                var hls = new Hls();
+                hls.loadSource(source);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = source;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                });
+            }
+        }
+    </script>
+</body>
+</html>
